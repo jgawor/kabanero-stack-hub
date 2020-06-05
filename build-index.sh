@@ -12,6 +12,9 @@ if [ -z "$IMAGE_REGISTRY" ]; then
     exit 1
 fi
 
+BASE_DIR="$(cd $(dirname $0) && pwd)"
+cd $BASE_DIR
+
 CONFIG_YAML=config/default_kabanero_config.yaml
 cp $CONFIG_YAML.tpl $CONFIG_YAML
 sed -i "s|image-org:.*|image-org: $IMAGE_ORG|" $CONFIG_YAML
