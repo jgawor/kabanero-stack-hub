@@ -1,0 +1,86 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kabanero-index
+  labels:
+    app: kabanero-index
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kabanero-index
+  template:
+    metadata:
+      labels:
+        app: kabanero-index
+      annotations:
+        date: "DATE"
+        sidecar.istio.io/inject: "false"
+    spec:
+      serviceAccountName: kabanero-index
+      initContainers:
+      - name: init
+        image: kabanero/kabanero-utils:0.3.0
+        command: ['/bin/sh']
+        args:
+          - -cex
+          - |
+            for i in 1 2 3; do
+              ROUTE=$(kubectl get route kabanero-index --no-headers -o=jsonpath='{.status.ingress[0].host}')
+              if [ -z "$ROUTE" ]; then
+                sleep 1
+              else
+                echo "http://$ROUTE" > /usr/share/kabanero/route
+                exit 0
+              fi
+            done
+            echo "Unable to get route"
+            exit 1
+        volumeMounts:
+        - name: shared-data
+          mountPath: /usr/share/kabanero
+      containers:
+      - name: nginx
+        image: REGISTRY/NAMESPACE/kabanero-index:TAG
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        command: ['/bin/sh']
+        args:
+          - -cex
+          - |
+            export EXTERNAL_URL=$(cat /usr/share/kabanero/route)
+            /opt/startup.sh
+        volumeMounts:
+        - name: shared-data
+          mountPath: /usr/share/kabanero
+      volumes:
+      - name: shared-data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kabanero-index
+  labels:
+    app: kabanero-index
+spec:
+  type: ClusterIP
+  selector:
+    app: kabanero-index
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: kabanero-index
+spec:
+  host: HOST
+  to:
+    kind: Service
+    name: kabanero-index

@@ -12,9 +12,11 @@ if [ -z "$IMAGE_REGISTRY" ]; then
     exit 1
 fi
 
-sed -i "s|image-org:.*|image-org: $IMAGE_ORG|" config/default_kabanero_config.yaml
-sed -i "s|image-registry:.*|image-registry: $IMAGE_REGISTRY|" config/default_kabanero_config.yaml
-sed -i "s|nginx-image-name:.*|nginx-image-name: $NGINX_IMAGE_NAME|" config/default_kabanero_config.yaml
+CONFIG_YAML=config/default_kabanero_config.yaml
+cp $CONFIG_YAML.tpl $CONFIG_YAML
+sed -i "s|image-org:.*|image-org: $IMAGE_ORG|" $CONFIG_YAML
+sed -i "s|image-registry:.*|image-registry: $IMAGE_REGISTRY|" $CONFIG_YAML
+sed -i "s|nginx-image-name:.*|nginx-image-name: $NGINX_IMAGE_NAME|" $CONFIG_YAML
 
 # build nginx container
 ./scripts/hub_build.sh default_kabanero_config.yaml
