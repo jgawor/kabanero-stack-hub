@@ -12,6 +12,9 @@ if [ -z "$IMAGE_REGISTRY" ]; then
     exit 1
 fi
 
+BASE_DIR="$(cd $(dirname $0) && pwd)"
+cd $BASE_DIR
+
 YAML_FILE=openshift/openshift.yaml
 cp $YAML_FILE.tpl $YAML_FILE 
 sed -i -e '/host:/d' $YAML_FILE
@@ -30,3 +33,7 @@ echo
 echo "You can run the following command to configure appsody:"
 echo "  appsody repo add cp4apps $STACK_HUB_URL"
 echo "  appsody list cp4apps"
+
+echo
+echo "Patching Kabanero resource"
+oc patch kabanero kabanero -n kabanero -p "[{'op': 'replace', 'path': '/spec/stacks/repositories/0/https/url', 'value':'$STACK_HUB_URL'}]" --type=json
